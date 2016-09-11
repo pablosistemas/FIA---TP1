@@ -217,6 +217,22 @@ Puzzle.prototype.unshiftXArrays = function (dst, src, father) {
    }
 }
 
+// Copies content from src to the end of dst.
+// You must use call new X over src array elements
+Puzzle.prototype.pushXArrays = function (dst, src, father) {
+   for (var i = 0; i < src.length; i++) {
+      if(src[i] == undefined) {
+         console.log(src);
+         throw "Error, null in children object";
+      }
+
+      var Xc = new X(src[i]);
+      Xc.setG(father.getG() + 1);
+      Xc.setParent(father);
+      dst.push (Xc);
+   }
+}
+
 // TODO
 // remove from src the arrays that are already present in dst
 Puzzle.prototype.removeChildren = function(src, dst) {
@@ -383,9 +399,9 @@ Puzzle.prototype.invariant = function( state ) {
 Puzzle.prototype.removesFirst = function (array) {
 
    // removes CS from SL
-   array.clean(undefined);
+   // array.clean(undefined);
    array.splice(0,1);
-   array.clean(undefined);
+   // array.clean(undefined);
 
 }
 
@@ -397,9 +413,12 @@ Puzzle.prototype.removesFirst = function (array) {
 // DE : dead ends, state whose descendants have failed to contain a
 // goal node
 // CS : current state
-Puzzle.prototype.depth1 = function() {
+Puzzle.prototype.depth1 = function( MAX_ITER ) {
 
    console.time('depth1');
+
+   if (MAX_ITER == undefined ) 
+      throw "MAX_ITER must be defined";
 
    var numConfig = 0;
 
@@ -411,7 +430,7 @@ Puzzle.prototype.depth1 = function() {
    SL.push(CS);
    NSL.push(CS);
 
-   while (NSL.length > 0){
+   while ( NSL.length > 0 && numConfig < MAX_ITER ){
       if(this.testEndState(CS.getState())) {
          console.timeEnd('depth1');
          console.log("Numero configuracoes: "+numConfig);
@@ -456,7 +475,8 @@ Puzzle.prototype.depth1 = function() {
             CS = NSL[0];
          }
          // adds CS to SL
-         SL.unshift(CS);
+         if(CS != undefined)
+            SL.unshift(CS);
 
       } else {
          for (var i = 0; i < children.length; i++){
@@ -496,20 +516,15 @@ Puzzle.prototype.idepth = function( MAX_DEEP ) {
    var SL  = [];
    var NSL = [];
    var DE  = [];
-   var CS;
+   var CS  = new X(this.state);
 
+   NSL.push(CS);
 
    while( DEEPEST_THRESHOLD < MAX_DEEP ) {
 
-      SL  = [];
-      NSL = [];
-      DE  = [];
-      CS  = new X(this.state);
-
-      if (SL.length > 0) throw "Error, length must be 0";
+      console.log(DEEPEST_THRESHOLD);
 
       SL.push(CS);
-      NSL.push(CS);
 
       while (NSL.length > 0){
 
@@ -523,8 +538,11 @@ Puzzle.prototype.idepth = function( MAX_DEEP ) {
             CS.getParent().path();
             return CS.getState();
          }
-         
-         var children = this.generateChildren(CS.getState());
+       
+         var children = []; 
+
+         // generates offsprings only if threshold is respected
+         children = this.generateChildren(CS.getState());
 
          // removes states previously explored
          this.removeXChildren(children,DE);
@@ -533,7 +551,7 @@ Puzzle.prototype.idepth = function( MAX_DEEP ) {
 
          // if no children or max depth reached
          if(children.length == 0 || 
-               SL.length >= parseInt(DEEPEST_THRESHOLD)){
+               CS.getG() >= parseInt(DEEPEST_THRESHOLD)){
 
             // empties SL and NSL
             while(SL.length > 0 && this.testEqualState(CS.getState(),
@@ -551,7 +569,8 @@ Puzzle.prototype.idepth = function( MAX_DEEP ) {
             }
 
             // adds CS to SL
-            SL.unshift(CS);
+            if(CS != undefined)
+               SL.unshift(CS);
 
          } else {
             for (var i = 0; i < children.length; i++){
@@ -560,26 +579,50 @@ Puzzle.prototype.idepth = function( MAX_DEEP ) {
 
                // add one level to the path
                Xc.setG(CS.getG() + 1);
+               // console.log(Xc.getG());
 
                NSL.unshift(Xc); 
 
                // new puzzle's configuration generated
                numConfig++;
+               // console.log(CS.getG()+" "+Xc.getG()+" "+DEEPEST_THRESHOLD);
+
             }
 
             CS = NSL[0];
+
             SL.unshift(CS);
          }
       }
+
+      // copies frontier inside NSL
+      DE.sort(compareG);
+      //console.log(DE);
+      
+      //this.printXArray(DE);
+
+      while( DE[0].getG() == DEEPEST_THRESHOLD ){
+         // console.log(DE[i]);
+         NSL.push(DE[0]);
+         DE.splice(0,1);
+         // console.log(DE[i].getG());
+      }
+
+      /*console.log("DE");
+      this.printXArray(DE);
+      console.log("NSL");
+      this.printXArray(NSL);
+      console.log();*/
+      CS = NSL[0];
+
       // increments the threshold to the next iteration
       DEEPEST_THRESHOLD++;
+
    }
 
    // no solution :(
    return undefined;
 };
-
-
 
 
 // Breadth-first search
@@ -852,7 +895,7 @@ X.prototype.heuristicEval2 = function (goal){
    // compares each element place with its goal place
    for(var i = 0; i < this.state.length; i++){
       // Ignores " " element; " " is represented by length
-      if(this.state[i] == this.state.length) { continue; }
+      // if(this.state[i] == this.state.length) { continue; }
       var j = 0;
       // finds the desired position of the value
       while(goal[j] != this.state[i]) { j++; }
@@ -871,7 +914,7 @@ X.prototype.heuristicEval2 = function (goal){
    }
 
    //this.dump();
-   //console.log(sum);
+   // console.log(sum);
    //console.log("fim");
 
    return sum;
@@ -898,6 +941,10 @@ function compare(X1,X2) {
       return X1.getF() - X2.getF();
 }
 
+// sorting based on the biggest G value
+function compareG(X1,X2) {
+   return X2.getG() - X1.getG();
+}
 
 // TODO
 Puzzle.prototype.distanceFrom = function (X,Y) {
@@ -1098,7 +1145,7 @@ Puzzle.prototype.aStar1 = function() {
 
 Puzzle.prototype.printXArray = function ( array ) {
    for(var i = 0; i < array.length; i++) {
-      //array[i].dump();
+      array[i].dump();
       console.log(array[i].getG()+" "+array[i].getH()+" "+array[i].getF());
    }
    console.log();
@@ -1112,6 +1159,7 @@ Puzzle.prototype.aStar2 = function() {
    var open    = [];
    var closed  = [];
    var numConfig = 0;
+   var key = 0;
   
    var start = new X(this.state); 
    start.setH(start.heuristicEval2(this.goal));
@@ -1122,6 +1170,8 @@ Puzzle.prototype.aStar2 = function() {
    open.push(start);
    
    while (open.length > 0) {
+      key++;
+      console.log(key);
       // remove from OPEN the smallest X node
       var Q = open[0];
 
@@ -1130,8 +1180,7 @@ Puzzle.prototype.aStar2 = function() {
       open.clean(undefined);
 
       // add Q on closed list
-      // console.log("Q: "+Q.getState()+" "+Q.getG());
-      // console.log("");
+      // console.log("Q: "+Q.getState()+" "+Q.getG()+" "+Q.getF());
       closed.push(Q);
 
       //console.log(open.length);
@@ -1173,7 +1222,7 @@ Puzzle.prototype.aStar2 = function() {
          console.log("filho");
          Xc.dump();*/
 
-         // evaluates X heuristic function: g
+         // evaluates heuristic function: h
          Xc.setG(Q.getG() + 1);
          Xc.setH(Xc.heuristicEval2(this.goal));
          Xc.setF();
@@ -1203,25 +1252,24 @@ Puzzle.prototype.aStar2 = function() {
                // open[idxOnOpen].setHash();
                open[idxOnOpen].setParent(Xc.getParent());
             }
-         } else if(idxOnClosed != undefined) {
+         } // else if(idxOnClosed != undefined) {
             // console.log("ja esta em closed");
-            /*closed[idxOnClosed].dump();
-            console.log(children[i]);*/
-            /*if(closed[idxOnClosed].getG() > Xc.getG()) {
-               open.push(Xc);
-
-               closed.splice(idxOnClosed,1);
-               closed.clean(undefined);
-            }*/
-         } 
+            // closed[idxOnClosed].dump();
+            // console.log(children[i]);*/
+            // if(closed[idxOnClosed].getG() > Xc.getG()) {
+            //   open.push(Xc);
+            //   closed.splice(idxOnClosed,1);
+            //   closed.clean(undefined);
+            // }
+         // } 
       }
 
       // priority-queue
       // console.time('sort');
       open.sort(compare);
       //console.log("open sorted");
-      //this.printXArray(open);
-      //console.log("closed sorted");
+      // this.printXArray(open);
+      // console.log("closed sorted");
       //this.printXArray(closed);
       //console.log("");
       // console.timeEnd('sort');
@@ -1252,6 +1300,7 @@ Puzzle.prototype.breadth1 = function () {
    while(open.length > 0){
       // sets the first element as current and remove it from open
       Q = open[0];
+      console.log(Q.getG());
 
       // removes the first element
       open.splice(0,1);
@@ -1277,8 +1326,9 @@ Puzzle.prototype.breadth1 = function () {
          this.removeXChildren(children,open);
          this.removeXChildren(children,closed);
 
-         // open is a LIFO: unshifts children in it
-         this.unshiftXArrays (open,children,Q);
+         // open is a FIFO: unshifts children in it
+         //this.unshiftXArrays (open,children,Q);
+         this.pushXArrays (open,children,Q);
          numConfig += children.length;
       }
    }

@@ -18,12 +18,6 @@ var novo = new mod.Puzzle (
       exp.casoFinal
    );
 
-var novo = new mod.Puzzle (
-      Math.sqrt(parseInt(process.argv[4])),
-      exp.casoInicial,
-      exp.casoFinal
-   );
-
 console.log("Instancia inicial:");
 
 novo.dump();
