@@ -248,10 +248,7 @@ Puzzle.prototype.removeChildren = function(src, dst) {
             // elemento removido
             if(this.testEqualState(comp1,comp2)){
                delete src[i];
-               //console.log(comp1);
-            } /*else {
-               aux.push(src[i]);
-            } */
+            }
          }
       }
    }
@@ -263,9 +260,6 @@ Puzzle.prototype.removeChildren = function(src, dst) {
 // remove from arr the arrays that are already present in arrObj
 // You must call getState() method for each element from arrObj
 Puzzle.prototype.removeXChildren = function(arr, arrObj) {
-
-   //console.log(arr);
-   //console.log(arrObj);
 
    var comp1, comp2;
    for(var i=0; i < arr.length; i++){
@@ -281,7 +275,6 @@ Puzzle.prototype.removeXChildren = function(arr, arrObj) {
             console.log(arrObj[j]);
             console.log("Must be != undefined"); 
          }*/
-
          //if( comp1 != undefined && comp2 != undefined){
             if(this.testEqualState(comp1,comp2.getState())){
                /*console.log("Sao iguais");
@@ -979,36 +972,6 @@ Puzzle.prototype.aStar = function() {
          var idxOnOpen   = this.elemInArray(children[i], open);
          var idxOnClosed = this.elemInArray(children[i], closed);
             
-         //case CHILDISNOTONOPENORCLOSED:
-         /*if( idxOnOpen == undefined && idxOnClosed == undefined ) {
-            var Xc = new X(children[i]);
-            
-            // evaluates X heuristic function: g
-            Xc.setG(X.getG()+1);
-            Xc.setH(Xc.heuristicEval1());
-            Xc.setF();
-
-            Xc.setParent(X);
-            open.unshift(Xc);
-         // case CHILDISINOPEN:
-         } else if( idxOnOpen ) { 
-            if(open[idxOnOpen].getValue() > Xc.getValue()){
-               open[idxOnOpen].setParent(Xc.getParent());
-
-               open[idxOnOpen].setG(Xc.getG());
-               open[idxOnOpen].setH(Xc.getH());
-               open[idxOnOpen].setF();
-            }
-         // case CHILDISONCLOSED:
-         } else if( idxOnClosed ) {
-            closed[idxOnClosed].splice(idxOnClosed,1);
-            closed.clean(undefined);
-            open.unshift(Xc);
-         }
-         closed.push(X);
-         // priority-queue
-         open.sort(compare);*/
-
          var Xc = new X(children[i]);
          
          // evaluates X heuristic function: g
@@ -1159,7 +1122,7 @@ Puzzle.prototype.aStar2 = function() {
    var open    = [];
    var closed  = [];
    var numConfig = 0;
-   var key = 0;
+   // var key = 0;
   
    var start = new X(this.state); 
    start.setH(start.heuristicEval2(this.goal));
@@ -1170,8 +1133,8 @@ Puzzle.prototype.aStar2 = function() {
    open.push(start);
    
    while (open.length > 0) {
-      key++;
-      console.log(key);
+      // key++;
+      // console.log(key);
       // remove from OPEN the smallest X node
       var Q = open[0];
 
@@ -1183,17 +1146,7 @@ Puzzle.prototype.aStar2 = function() {
       // console.log("Q: "+Q.getState()+" "+Q.getG()+" "+Q.getF());
       closed.push(Q);
 
-      //console.log(open.length);
-      // console.log("antes");
-      // this.printXArray(open);
-      //console.log(open.length);
-      // console.log("depois");
-      // this.printXArray(open);
-      // console.log("");
-      
-      //console.time("end");
       var end = this.testEndState(Q.getState());
-      //console.timeEnd("end");
 
       if( end ) {
          console.timeEnd('astar2');
@@ -1210,17 +1163,10 @@ Puzzle.prototype.aStar2 = function() {
       for(var i = 0; i < children.length; i++) {
          // captures the indexes containing the elements on open and
          // closed
-         // console.time("openOrClosed");
          var idxOnOpen   = this.elemInArray(children[i], open);
          var idxOnClosed = this.elemInArray(children[i], closed);
-         // console.timeEnd("openOrClosed");
 
          var Xc = new X(children[i]);
-
-         /*console.log("pai");
-         Q.dump(); 
-         console.log("filho");
-         Xc.dump();*/
 
          // evaluates heuristic function: h
          Xc.setG(Q.getG() + 1);
@@ -1229,20 +1175,12 @@ Puzzle.prototype.aStar2 = function() {
          // Xc.setHash();
          Xc.setParent(Q);
 
-         // console.log(idxOnOpen+":"+open.length+" "+idxOnClosed+":"+closed.length);
-
-         /*if(idxOnOpen != undefined && idxOnClosed != undefined) {
-            throw "Uai";
-         }*/
-
          if(idxOnOpen == undefined && idxOnClosed == undefined) {
 
             // num of different puzzle's configurations generated
             // It does not include already open or closed instances
             numConfig++;
-            //console.log(numConfig);
             open.push(Xc);
-            // console.log("pushing: "+Xc.getG());
          } else if(idxOnOpen != undefined) {
             // console.log("ja estao em open");
             if(open[idxOnOpen].getG() > Xc.getG()) {
@@ -1252,28 +1190,13 @@ Puzzle.prototype.aStar2 = function() {
                // open[idxOnOpen].setHash();
                open[idxOnOpen].setParent(Xc.getParent());
             }
-         } // else if(idxOnClosed != undefined) {
-            // console.log("ja esta em closed");
-            // closed[idxOnClosed].dump();
-            // console.log(children[i]);*/
-            // if(closed[idxOnClosed].getG() > Xc.getG()) {
-            //   open.push(Xc);
-            //   closed.splice(idxOnClosed,1);
-            //   closed.clean(undefined);
-            // }
-         // } 
+         }
       }
 
       // priority-queue
-      // console.time('sort');
       open.sort(compare);
-      //console.log("open sorted");
-      // this.printXArray(open);
-      // console.log("closed sorted");
-      //this.printXArray(closed);
-      //console.log("");
-      // console.timeEnd('sort');
    }
+
    // no solution
    return undefined;
 }
@@ -1300,7 +1223,6 @@ Puzzle.prototype.breadth1 = function () {
    while(open.length > 0){
       // sets the first element as current and remove it from open
       Q = open[0];
-      console.log(Q.getG());
 
       // removes the first element
       open.splice(0,1);
@@ -1327,7 +1249,6 @@ Puzzle.prototype.breadth1 = function () {
          this.removeXChildren(children,closed);
 
          // open is a FIFO: unshifts children in it
-         //this.unshiftXArrays (open,children,Q);
          this.pushXArrays (open,children,Q);
          numConfig += children.length;
       }
