@@ -492,6 +492,101 @@ Puzzle.prototype.depth1 = function( MAX_ITER ) {
    return undefined;
 };
 
+// depth-first method
+// SL : state list (current path being tried)
+// NSL: new state list (nodes awaiting evaluation)
+// DE : dead ends, state whose descendants have failed to contain a
+// goal node
+// CS : current state
+Puzzle.prototype.depth2 = function( MAX_DEEP ) {
+
+   console.time('depth2');
+
+   if (MAX_DEEP == undefined ) 
+      throw "MAX_DEEP must be defined";
+
+   var numConfig = 0;
+
+   var SL   = [];
+   var NSL  = [];
+   var DE   = [];
+   var CS   = new X(this.state);
+
+   SL.push(CS);
+   NSL.push(CS);
+
+   while ( NSL.length > 0 ){
+      if(this.testEndState(CS.getState())) {
+         console.timeEnd('depth2');
+         console.log("Numero configuracoes: "+numConfig);
+         console.log("Numero movimentos: "+CS.getG());
+         console.log("Caminho:");
+         CS.dump();
+         CS.getParent().path();
+         return CS.getState();
+      }
+      
+      // tests if current state is solvable to avoid
+      // expansion of lost nodes
+
+      var children = [];
+      // generates offsprings until MAX_DEEP ()
+      if( CS.getG() < MAX_DEEP ) 
+         children = this.generateChildren(CS.getState());
+
+      // removes states previously explored
+      this.removeXChildren(children,DE);
+      this.removeXChildren(children,SL);
+      this.removeXChildren(children,NSL);
+
+      // if no children
+      if(children.length == 0){
+         // empties SL and NSL
+         while(SL.length > 0 && this.testEqualState(CS.getState(),
+               SL[0].getState())){
+            // adds CS to DE
+            DE.push(CS);
+            
+            // removes CS from SL
+            this.removesFirst(SL);
+            
+            // removes CS from NSL
+            this.removesFirst(NSL);
+
+            // ERROR: slice of undefined
+            /*if(NSL[0] == undefined) {
+               console.log(NSL);
+               console.log(SL);
+               console.log(CS);
+            }*/
+            // clean undefined
+            CS = NSL[0];
+         }
+         // adds CS to SL
+         if(CS != undefined)
+            SL.unshift(CS);
+
+      } else {
+         for (var i = 0; i < children.length; i++){
+            var Xc = new X(children[i]);
+            Xc.setParent(CS);
+
+            // add one level to the path
+            Xc.setG(CS.getG() + 1);
+            NSL.unshift(Xc); 
+
+            // new puzzle's configuration generated
+            numConfig++;
+         }
+         // NSL.unshift(children.slice());
+         CS = NSL[0];
+         SL.unshift(CS);
+      }
+   }
+   // no solution :(
+   return undefined;
+};
+
 // Iterative depth-first method
 // SL : state list (current path being tried)
 // NSL: new state list (nodes awaiting evaluation)
@@ -572,40 +667,26 @@ Puzzle.prototype.idepth = function( MAX_DEEP ) {
 
                // add one level to the path
                Xc.setG(CS.getG() + 1);
-               // console.log(Xc.getG());
 
                NSL.unshift(Xc); 
 
                // new puzzle's configuration generated
                numConfig++;
-               // console.log(CS.getG()+" "+Xc.getG()+" "+DEEPEST_THRESHOLD);
-
             }
 
             CS = NSL[0];
-
             SL.unshift(CS);
          }
       }
 
       // copies frontier inside NSL
       DE.sort(compareG);
-      //console.log(DE);
       
-      //this.printXArray(DE);
-
       while( DE[0].getG() == DEEPEST_THRESHOLD ){
-         // console.log(DE[i]);
          NSL.push(DE[0]);
          DE.splice(0,1);
-         // console.log(DE[i].getG());
       }
 
-      /*console.log("DE");
-      this.printXArray(DE);
-      console.log("NSL");
-      this.printXArray(NSL);
-      console.log();*/
       CS = NSL[0];
 
       // increments the threshold to the next iteration

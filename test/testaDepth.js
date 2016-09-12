@@ -22,4 +22,4 @@ console.log("Instancia inicial:");
 
 novo.dump();
 
-novo.depth1( 50000 );
+novo.depth2( 40 );
